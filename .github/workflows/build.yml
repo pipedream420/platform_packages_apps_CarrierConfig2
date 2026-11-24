@@ -1,0 +1,48 @@
+name: AOSP Build Check
+
+on:
+  push:
+    branches: [ main, master, android-*, visible-vvm-config ]
+  pull_request:
+    branches: [ main, master, android-*, visible-vvm-config ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update && apt-get install -y \
+            git \
+            openjdk-17-jdk \
+            python3 \
+            python-is-python3 \
+            protobuf-compiler \
+            make \
+            zip
+
+      - name: Verify Environment and Tools
+        run: |
+          java -version
+          javac -version
+          protoc --version
+          echo "Repository files:"
+          ls -la
+          echo "Source files:"
+          find src -name "*.java"
+          find src -name "*.proto"
+
+      - name: Test Protobuf Compilation
+        run: |
+          mkdir -p build/gen
+          protoc --java_out=build/gen \
+              -I=src \
+              src/com/google/carrier/carrier_list.proto \
+              src/com/google/carrier/carrier_settings.proto
+          echo "Protobuf files compiled successfully."
